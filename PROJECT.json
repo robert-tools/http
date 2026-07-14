@@ -1,0 +1,10 @@
+{
+    "$schema": "https://willi84.github.io/project-tracking-record/project.schema.json",
+    "🗂️ name": "@robert.tools/sample",
+    "🎯 goal": "A sample package",
+    "🔖 version": "1.0.0",
+    "📄 id": "ROB-005",
+    "⚖️ license": "MIT",
+    "👩 author": "Robert Willemelis",
+    "🚦 status": "active"
+}
