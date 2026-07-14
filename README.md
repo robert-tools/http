@@ -1,17 +1,15 @@
-# @robert.tools/sample
+# @robert.tools/http
 
-A sample package for robert.tools.
+A package to provide access to http tools
 
 ## Installation
 
 ```bash
-npm install @robert.tools/sample
+npm install @robert.tools/http
 ```
 
 ## Usage
 
 ```typescript
-import { sample } from '@robert.tools/sample';
 
-sample('hello'); // 'sample: hello'
 ```

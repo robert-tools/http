@@ -1,7 +1,7 @@
 {
-    "name": "@robert.tools/sample",
+    "name": "@robert.tools/http",
     "version": "1.0.0",
-    "description": "A sample package",
+    "description": "A package to provide access to http tools",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
@@ -19,16 +19,16 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/robert-tools/sample.git"
+        "url": "git+https://github.com/robert-tools/http.git"
     },
     "bugs": {
-        "url": "https://github.com/robert-tools/sample/issues"
+        "url": "https://github.com/robert-tools/http/issues"
     },
-    "homepage": "https://github.com/robert-tools/sample#readme",
+    "homepage": "https://github.com/robert-tools/http#readme",
     "keywords": [
         "typescript",
         "node",
-        "sample",
+        "http",
         "robert.tools"
     ],
     "author": "Robert Willemelis",
@@ -54,5 +54,8 @@
         "typescript": "^5.9.0"
     },
     "dependencies": {
+        "@robert.tools/cmd": "^1.0.0",
+        "@robert.tools/convert": "^1.0.0",
+        "@robert.tools/log": "^1.0.0"
     }
 }

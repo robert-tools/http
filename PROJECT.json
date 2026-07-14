@@ -1,7 +1,7 @@
 {
     "$schema": "https://willi84.github.io/project-tracking-record/project.schema.json",
-    "🗂️ name": "@robert.tools/sample",
-    "🎯 goal": "A sample package",
+    "🗂️ name": "@robert.tools/http",
+    "🎯 goal": "A package to provide access to http tools",
     "🔖 version": "1.0.0",
     "📄 id": "ROB-005",
     "⚖️ license": "MIT",
