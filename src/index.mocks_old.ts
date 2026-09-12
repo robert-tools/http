@@ -1,5 +1,5 @@
 import type { HTTP_OBJECTS } from './index.d';
-import { DOMAIN_200, DOMAIN_UNKNOWN } from './index.config';
+import { DOMAIN_200, DOMAIN_UNKNOWN, DOMAIN_STATUS_0 } from './index.config';
 import { MOCKED_URLS_TYPE } from './index.d';
 import { setProtocolStatus } from './index.mocks';
 // import { DOMAIN_UNKNOWN } from './index.mocks';
@@ -61,6 +61,9 @@ export const MOCKED_URLS: MOCKED_URLS_TYPE = {
     HTTP_UNKNOWN: {
         step1: `${DOMAIN_UNKNOWN}`,
         // step1: 'https://wifi.inflightinternet.com',
+    },
+    HTTP_UNKNOWN_STATUS: {
+        step1: `${DOMAIN_STATUS_0}`,
     },
     DOMAIN_200: {
         step1: `https://www.${DOMAIN_200}/`,

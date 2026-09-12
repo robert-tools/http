@@ -27,9 +27,13 @@ import {
 /**
  * 🎯 get minimal http item
  * @param {string} header ➡️ The raw HTTP header string.
+ * @param {boolean} [debug] ➡️ Whether to enable debug logging.
  * @returns {HTTPStatusBase} 📤 The parsed HTTP status object.
  */
-export const getHttpItemFromHeader = (header: string): HTTPStatusBase => {
+export const getHttpItemFromHeader = (
+    header: string,
+    debug = false
+): HTTPStatusBase => {
     const httpItem: any = {};
     const lines = header
         .split('\n')
@@ -62,8 +66,10 @@ export const getHttpItemFromHeader = (header: string): HTTPStatusBase => {
     });
     if (httpItem.status === undefined) {
         httpItem.status = '0';
-        LOG.WARN('no status code found. set to 0');
-        LOG.DEBUG(header);
+        if (debug === true) {
+            LOG.WARN('no status code found. set to 0');
+            LOG.DEBUG(header);
+        }
     }
     return httpItem;
 };
@@ -85,14 +91,16 @@ export const getConnectionTime = (url: string): string => {
  * @param {string} url ➡️ The URL to check.
  * @param {boolean} forwarding ➡️ Whether to follow redirects.
  * @param {number} [timeout] ➡️ Optional timeout in seconds.
+ * @param {boolean} [debug] ➡️ Whether to enable debug logging.
  * @returns {string} 📤 The HTTP status code as a string.
  */
 export const getHttpStatusValue = (
     url: string,
     forwarding = false,
-    timeout?: number
+    timeout?: number,
+    debug = false
 ) => {
-    const httpItem = getHttpItem(url, forwarding, timeout);
+    const httpItem = getHttpItem(url, forwarding, timeout, debug);
     if (httpItem['maxRedirectsReached']) {
         LOG.FAIL(`max redirects reached for ${url}`);
     }
@@ -115,6 +123,7 @@ export const getHttpBase = (
     const timeout = options.timeout as number | undefined;
     const oldTime = convertNumber2String(STANDARD_CURL_TIMEOUT);
     const newTime = convertNumber2String(timeout || STANDARD_CURL_TIMEOUT);
+    const debug = options.hasOwnProperty('debug') ? options.debug : false;
     let config = timeout
         ? CURL_CONFIG_STATUS.replace(oldTime, newTime)
         : CURL_CONFIG_STATUS;
@@ -132,7 +141,7 @@ export const getHttpBase = (
     // console.log(header)
     // const httpItem2 = getResponse(url);
     // const httpItem = getHttpItemFromHeader(httpItem2.header);
-    const httpItem = getHttpItemFromHeader(header);
+    const httpItem = getHttpItemFromHeader(header, debug);
     // console.log(httpItem)
     // console.log(httpItem2.header)
     // return httpItem2.header;
@@ -151,7 +160,8 @@ export const getHttpBase = (
 export const getHttpItem = (
     url: string,
     forwarding = false,
-    timeout?: number
+    timeout?: number,
+    debug = false
 ): HTTPStatusBase => {
     const initialUrl = url;
     const maxRedirects = 5;
@@ -160,7 +170,7 @@ export const getHttpItem = (
     if (forwarding) {
         while (forwarding) {
             redirects += 1;
-            httpItem = getHttpBase(url, { timeout });
+            httpItem = getHttpBase(url, { timeout, debug });
             if (redirects > maxRedirects) {
                 httpItem['maxRedirectsReached'] = 'true';
                 httpItem['lastStatus'] = httpItem['status'];
@@ -185,7 +195,7 @@ export const getHttpItem = (
             }
         }
     } else {
-        httpItem = getHttpBase(url, { timeout });
+        httpItem = getHttpBase(url, { timeout, debug });
         httpItem['lastLocation'] = url;
     }
     return httpItem;

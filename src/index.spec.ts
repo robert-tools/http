@@ -23,6 +23,7 @@ import {
     DOMAIN_301,
     DOMAIN_404,
     DOMAIN_UNKNOWN,
+    DOMAIN_STATUS_0,
 } from './index.config';
 
 import { _httpItem, _header, _response, spyOnCommand } from './index.mocks';
@@ -68,13 +69,13 @@ describe('CLASS: HTTP', () => {
     describe('✅ getHttpStatusValue()', () => {
         const FN = getHttpStatusValue;
         let mockCommand: jest.SpyInstance;
-        beforeEach(() => {
-            mockCommand = spyOnCommand(...API_V2);
-        });
-        afterEach(() => {
-            mockCommand.mockRestore();
-        });
         describe('get next step response', () => {
+            beforeEach(() => {
+                mockCommand = spyOnCommand(...API_V2);
+            });
+            afterEach(() => {
+                mockCommand.mockRestore();
+            });
             it('return 200 direct', () => {
                 expect(FN(`https://www.${DOMAIN_200}/`)).toEqual('200');
             });
@@ -104,7 +105,35 @@ describe('CLASS: HTTP', () => {
                 expect(FN(`https://www.${DOMAIN}/`)).toEqual('0');
             });
         });
+        describe('handle 0 response', () => {
+            // beforeEach(() => {
+            //     mockCommand = spyOnCommand(...API_V2);
+            // });
+            // afterEach(() => {
+            //     mockCommand.mockRestore();
+            // });
+            it('should not log a warning for unknown domain', () => {
+                const spy = jest.spyOn(LOG, 'WARN');
+                const DOMAIN = DOMAIN_STATUS_0;
+                expect(FN(`${DOMAIN}`)).toEqual('0');
+                expect(spy).not.toHaveBeenCalled();
+                spy.mockRestore();
+            });
+            it('should log a warning for unknown domain', () => {
+                const spy = jest.spyOn(LOG, 'WARN');
+                const DOMAIN = DOMAIN_STATUS_0;
+                expect(FN(`${DOMAIN}`, true, 50, true)).toEqual('0');
+                expect(spy).toHaveBeenCalled();
+                spy.mockRestore();
+            });
+        });
         describe('get last step response', () => {
+            beforeEach(() => {
+                mockCommand = spyOnCommand(...API_V2);
+            });
+            afterEach(() => {
+                mockCommand.mockRestore();
+            });
             it('return 200 with forward 1', () => {
                 const DOMAIN = DOMAIN_200;
                 const EXPECTED = '200';

@@ -21,6 +21,7 @@ export const DOMAIN_301_2 = 'domain-301-2.de';
 export const DOMAIN_404 = 'domain-404.de';
 export const DOMAIN_500 = 'domain-500.de';
 export const DOMAIN_UNKNOWN = 'domain-unknown.de';
+export const DOMAIN_STATUS_0 = 'domain-status-0.de';
 
 export const STATUSCODES: STATUS_CODES = {
     200: { text: 'OK', domains: [DOMAIN_200] },
