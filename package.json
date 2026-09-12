@@ -16,6 +16,7 @@
         "status": "robi status",
         "version": "robi version",
         "verbose": "robi verbose",
+        "pub": "npm whoami && npm publish --access public",
         "build": "tsc -p tsconfig.build.json",
         "test": "jest --coverage --runInBand --verbose",
         "lint": "eslint .",
