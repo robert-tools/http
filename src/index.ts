@@ -2,8 +2,8 @@
  * 🎯 A utility class for http handling
  * @module backend/_shared/HTTP
  * @example getResponse('https://www.domain.de');
- * @version 0.0.1
- * @date 2025-09-19
+ * @version 1.0.1
+ * @date 2026-09-12
  * @license MIT
  * @author Robert Willemelis <github.com/willi84>
  */
