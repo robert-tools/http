@@ -1,7 +1,7 @@
-name: "🐛 Bug"
-description: "Create a development task"
-title: ""
-labels: []
+name: "🐛 Bug report"
+description: "Report a reproducible problem"
+title: "[Bug]: "
+labels: ["bug"]
 assignees: []
 
 body:
