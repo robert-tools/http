@@ -1,7 +1,7 @@
 /**
  * 🧩 types for HTTP
  * @module backend/_shared/HTTP
- * @version 2.0.0
+ * @version 2.0.1
  * @date 2026-09-23
  * @lastModified 2026-10-15
  * @license MIT

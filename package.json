@@ -1,6 +1,6 @@
 {
     "name": "@robert.tools/http",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "A package to provide access to http tools",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -17,7 +17,7 @@
         "version": "robi version",
         "verbose": "robi verbose",
         "pub": "npm whoami && npm publish --access public",
-        "build": "tsc -p tsconfig.build.json",
+        "build": "rm -rf dist && tsc -p tsconfig.build.json",
         "test": "jest --coverage --runInBand --verbose",
         "lint": "eslint .",
         "check": "npm run lint && npm test && npm run build",
