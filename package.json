@@ -1,6 +1,6 @@
 {
     "name": "@robert.tools/http",
-    "version": "1.0.1",
+    "version": "2.0.0",
     "description": "A package to provide access to http tools",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",

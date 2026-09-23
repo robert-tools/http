@@ -1,8 +1,8 @@
 /**
  * 🧩 types for HTTP
  * @module backend/_shared/HTTP
- * @version 1.0.1
- * @date 2026-09-12
+ * @version 2.0.0
+ * @date 2026-09-23
  * @lastModified 2026-10-15
  * @license MIT
  * @author Robert Willemelis <github.com/willi84>
