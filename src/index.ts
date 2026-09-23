@@ -8,99 +8,49 @@
  * @author Robert Willemelis <github.com/willi84>
  */
 
+// external dependencies
 import { LOG } from '@robert.tools/log';
-import type { CurlItem, HTTPStatusBase } from './index.d';
-
-import {
-    CURL_CONFIG_STATUS,
-    DOUBLE_REGEX,
-    STANDARD_CURL_TIMEOUT,
-} from './index.config';
-import { HOSTNAME, SLD, URL } from './index.d';
 import { command } from '@robert.tools/cmd';
+import { getProp } from '@robert.tools/utils';
+import { NUM, URI } from '@robert.tools/typings';
+import { curl } from '@robert.tools/curl';
+
+// internal dependencies
+import { BASE_HTTP_OPTS as OPTS, STANDARD_CURL_TIMEOUT } from './index.config';
 import {
-    convert2KeyValue,
-    convertKey2CamelCase,
-    convertNumber2String,
-} from '@robert.tools/convert';
+    getCurlOpts,
+    getDefaultResponse,
+    getHttpFromHeader,
+    getSuccess,
+    isHTTP,
+    setLastLocation,
+    splitHeaderAndContent,
+} from './utils/utils';
 
-/**
- * 🎯 get minimal http item
- * @param {string} header ➡️ The raw HTTP header string.
- * @param {boolean} [debug] ➡️ Whether to enable debug logging.
- * @returns {HTTPStatusBase} 📤 The parsed HTTP status object.
- */
-export const getHttpItemFromHeader = (
-    header: string,
-    debug = false
-): HTTPStatusBase => {
-    const httpItem: any = {};
-    const lines = header
-        .split('\n')
-        .filter((line: string) => line.trim() !== '');
-    lines.forEach((line: string) => {
-        const item = convert2KeyValue(line.trim());
-        const key = convertKey2CamelCase(item.key);
-
-        // if (key.trim() !== '') {
-        //     // avoid empty key
-        //     httpItem[`${key}`] = item.value;
-        // }
-        // detect httpStatus
-        if (key.indexOf('http/') === 0) {
-            const version = key.split('/')[1];
-            const status = item.value.split(' ')[0];
-            const message = item.value.replace(status, '').trim();
-            httpItem.protocol = 'http';
-            httpItem.protocolVersion = version;
-            httpItem.status = status;
-            httpItem.statusMessage = message;
-            // httpItem.statusMessage = item.value
-            //     .replace(status, '')
-            //     // .replace(httpItem.status, '')
-            //     .trim();
-        } else if (key.trim() !== '') {
-            // avoid empty key
-            httpItem[`${key}`] = item.value;
-        }
-    });
-    if (httpItem.status === undefined) {
-        httpItem.status = '0';
-        if (debug === true) {
-            LOG.WARN('no status code found. set to 0');
-            LOG.DEBUG(header);
-        }
-    }
-    return httpItem;
-};
+// types
+import type { CurlItem, HTTP_OPTS, HTTP } from './index.d';
+import type { HEADER_CONTENT } from './utils/utils.d';
 
 /**
  * 🎯 get the time of connecting to an url
- * @param {string} url ➡️ The URL to connect to.
+ * @param {URI} url ➡️ The URL to connect to.
  * @returns {string} 📤 The connection time in seconds as a string.
  */
-export const getConnectionTime = (url: string): string => {
+export const getConnectionTime = (url: URI): NUM => {
     // return just time
     const cmd = `curl -o /dev/null -s -w '%{time_total}\\n' ${url}`;
-    const status = command(`${cmd}`);
-    return status;
+    return command(`${cmd}`);
 };
 
 /**
  * 🎯 get http status value from specified url
  * @param {string} url ➡️ The URL to check.
- * @param {boolean} forwarding ➡️ Whether to follow redirects.
- * @param {number} [timeout] ➡️ Optional timeout in seconds.
- * @param {boolean} [debug] ➡️ Whether to enable debug logging.
- * @returns {string} 📤 The HTTP status code as a string.
+ * @param {HTTP_OPTS} [opts] ➡️ Optional configuration object containing forwarding, timeout, debug, and method.
+ * @returns {NUM} 📤 The HTTP status code as a string.
  */
-export const getHttpStatusValue = (
-    url: string,
-    forwarding = false,
-    timeout?: number,
-    debug = false
-) => {
-    const httpItem = getHttpItem(url, forwarding, timeout, debug);
+export const getHttpStatusValue = (url: URI, opts: HTTP_OPTS = OPTS): NUM => {
+    // const opts = { ...options }; // needs copy
+    const httpItem = getHttpItem(url, opts);
     if (httpItem['maxRedirectsReached']) {
         LOG.FAIL(`max redirects reached for ${url}`);
     }
@@ -108,70 +58,43 @@ export const getHttpStatusValue = (
 };
 
 /**
- * 🎯 get base http item for url
+ * 🎯 get base http item for url (wrapper of getResponse)
  * @param {string} url ➡️ The URL to check.
- * @param {number} [timeout] ➡️ Optional timeout in seconds.
+ * @param {HTTP_OPTS} [opts] ➡️ Optional configuration object containing timeout, debug, and method.
  * @returns {HeaderItem} 📤 The parsed HTTP status object.
-//  * @returns {HTTPStatusBase} 📤 The parsed HTTP status object.
+//  * @returns {HTTP} 📤 The parsed HTTP status object.
  */
-export const getHttpBase = (
-    url: string,
-    // timeout?: number,
-    options: any = {}
-): HTTPStatusBase => {
-    // TODO: return HeaderItem
-    const timeout = options.timeout as number | undefined;
-    const oldTime = convertNumber2String(STANDARD_CURL_TIMEOUT);
-    const newTime = convertNumber2String(timeout || STANDARD_CURL_TIMEOUT);
-    const debug = options.hasOwnProperty('debug') ? options.debug : false;
-    let config = timeout
-        ? CURL_CONFIG_STATUS.replace(oldTime, newTime)
-        : CURL_CONFIG_STATUS;
-    const method = options.method ? options.method.toUpperCase() : '';
-    if (method) {
-        config += ` -X ${method} `;
-    }
-    // const method = (options as any).method || '';
-    const finalURL = url;
-    // const finalURL = encodeURI(url);
-    // const finalURL = isEncoded ? url : encodeURI(url);
-    const fullCommand = `curl -I "${finalURL}" ${config}`;
-
-    const header = command(`${fullCommand}`);
-    // console.log(header)
-    // const httpItem2 = getResponse(url);
-    // const httpItem = getHttpItemFromHeader(httpItem2.header);
-    const httpItem = getHttpItemFromHeader(header, debug);
-    // console.log(httpItem)
-    // console.log(httpItem2.header)
-    // return httpItem2.header;
-    return httpItem;
+export const getHttpBase = (url: URI, opts: HTTP_OPTS = OPTS): HTTP => {
+    return getResponse(url, opts).header;
 };
 
 /**
  * 🎯 get base http item for url with forwarding
  * @todo refactor with getHttpBase and getResponse
  * @todo forwarding and timeout as optional paramaters
- * @param {string} url ➡️ The URL to check.
- * @param {number} [timeout] ➡️ Optional timeout in seconds.
- * @param {boolean} forwarding ➡️ Whether to follow redirects.
- * @returns {HTTPStatusBase} 📤 The parsed HTTP status object.
+ * @param {URI} url ➡️ The URL to check.
+ * @param {HTTP_OPTS} opts ➡️ Optional configuration object containing forwarding, timeout, debug, and method.
+ * @returns {HTTP} 📤 The parsed HTTP status object.
  */
-export const getHttpItem = (
-    url: string,
-    forwarding = false,
-    timeout?: number,
-    debug = false
-): HTTPStatusBase => {
+export const getHttpItem = (url: URI, opts: HTTP_OPTS = OPTS): HTTP => {
     const initialUrl = url;
-    const maxRedirects = 5;
+    const maxRedirects = getProp(opts, 'maxRedirects', 5);
     let redirects = 0;
-    let httpItem: HTTPStatusBase = {} as HTTPStatusBase;
+    let httpItem: HTTP = {} as HTTP;
+    let forwarding = getProp(opts, 'forwarding', false); // no reference on options!
+    let oldUrl = url;
     if (forwarding) {
         while (forwarding) {
             redirects += 1;
-            httpItem = getHttpBase(url, { timeout, debug });
-            if (redirects > maxRedirects) {
+            httpItem = getResponse(url, opts).header;
+            // httpItem = getHttpBase(url, opts);
+            if (httpItem['location'] === oldUrl) {
+                forwarding = false;
+                httpItem['initialUrl'] = initialUrl; // TODO: testing
+                httpItem['lastLocation'] = url; // TODO: testing
+                httpItem['redirects'] = `${redirects}`;
+                return httpItem;
+            } else if (redirects > maxRedirects) {
                 httpItem['maxRedirectsReached'] = 'true';
                 httpItem['lastStatus'] = httpItem['status'];
                 httpItem['status'] = '0';
@@ -184,6 +107,8 @@ export const getHttpItem = (
                 // TODO: check valid url
                 const location = httpItem['location'];
                 if (location) {
+                    oldUrl = url;
+                    // httpItem['lastLocation'] = url;
                     url = location;
                 } else {
                     forwarding = false;
@@ -195,8 +120,9 @@ export const getHttpItem = (
             }
         }
     } else {
-        httpItem = getHttpBase(url, { timeout, debug });
-        httpItem['lastLocation'] = url;
+        httpItem = getResponse(url, opts).header;
+        // httpItem = getHttpBase(url, opts);
+        if (oldUrl !== url) httpItem['lastLocation'] = url; // TODO: testen
     }
     return httpItem;
 };
@@ -205,124 +131,43 @@ export const getHttpItem = (
  * 🎯 get full response for url
  * @todo refactor with getHttpItem
  * @param {string} url ➡️ The URL to fetch.
- * @param {object} [opts] ➡️ Optional settings (e.g., token, isDev).
+ * @param {HTTP_OPTS} options ➡️ Optional settings (e.g., token, isDev).
  * @returns {CurlItem} 📤 The response object containing header, content, status, success, and time.
  */
-export const getResponse = (url: string, opts: any = {}): CurlItem => {
-    const token = (opts as any).token || '';
-    const isDev = (opts as any).isDev || false;
-    const customUA = (opts as any).ua || '-H "User-Agent: nodejs" ';
+export const getResponse = (url: URI, options: HTTP_OPTS = OPTS): CurlItem => {
     const start = new Date().getTime();
     const isGithubApi = url.indexOf('api.github.com') !== -1;
-    const isGitlabApi = url.indexOf('gitlab') !== -1;
-    const type = opts.type ? opts.type : '';
-
-    if (isGithubApi && !token) {
+    const isMock = getProp(options, 'isMock', false);
+    if (isGithubApi && !options.token) {
         LOG.FAIL('Please set a GITHUB_TOKEN in the environment variables.');
-        return {
-            header: {},
-            content: '',
-            status: '0',
-            success: false,
-            time: new Date().getTime() - start,
-        };
+        return getDefaultResponse(start, isMock); // fallback
     }
 
-    // setup auth header if token is provided
-    const TOKEN_KEYS: { [key: string]: string } = {
-        github: 'Authorization: token',
-        gitlab: 'PRIVATE-TOKEN:',
+    const defaultOptions = {
+        timeout: getProp(options, 'timeout', STANDARD_CURL_TIMEOUT),
+        silent: true,
     };
-    const urlKey = isGithubApi ? 'github' : isGitlabApi ? 'gitlab' : 'default';
-    const auth = `${TOKEN_KEYS[urlKey] ? `-H "${TOKEN_KEYS[urlKey]} ${token}" ` : ''}`;
-
-    const ua = isGithubApi ? '' : customUA;
-    // encodeURI important to avoid issues
-    const finalCommand = `curl -s ${auth} ${ua} -i "${encodeURI(url)}" ${type} `;
-    // console.log('finalCommand', finalCommand);
-    const rawData = command(finalCommand);
-
-    let data = rawData.replace(/^\n/, ''); // remove first empty line if exists
-    const splitted = data.split(/\r?\n\r?\n/);
-    const header = splitted[0];
-    const httpItem = getHttpItemFromHeader(header);
-    if (httpItem['status'] === '0') {
-        LOG.DEBUG(`rawData: ${rawData}`);
-    } else if (httpItem['status'] !== '200') {
-        LOG.WARN(
-            `HTTP Status for ${url}: ${httpItem['status']} - ${httpItem['statusMessage']}`
-        );
-        LOG.DEBUG(finalCommand);
+    const allOptions = { ...defaultOptions, ...options };
+    const curlOpts = getCurlOpts(allOptions);
+    const time = isMock ? 23 : new Date().getTime() - start;
+    const rawData = curl(url, curlOpts); // run commmand
+    // break if no valid HTTP response is received
+    if (!isHTTP(rawData)) {
+        LOG.FAIL(`Invalid HTTP response: ${rawData}`);
+        return getDefaultResponse(start, isMock); // fallback
     }
-    // all splitted except 0
-    // TODO: check if hasHeader for opencode
-    const hasHeader =
-        httpItem['status'] !== undefined && httpItem['status'] !== '0';
-    const hasData =
-        httpItem['status'] === '0' && Object.keys(httpItem).length === 1;
-    const contentItem = splitted.slice(1).join('\n');
-    const content = hasHeader ? contentItem : hasData ? data : '';
-    const status = parseInt(httpItem.status, 10) || 0;
-    if (httpItem['status'] === '0') {
-        LOG.WARN(`no status code found. set to 0`);
-    }
-    const success = status >= 200 && status < 400;
-    if (isDev) {
-        const type = success ? 'OK' : 'INFO';
-        LOG[type](`Response: ${url}: ${status} - ${httpItem.statusMessage}`);
-    }
-    // TODO: handling rate limits in extra function
-    // if (isGithubApi) {
-    //     const keysRemain = ['x-ratelimit-remaining', 'xRatelimitRemaining'];
-    //     const keysLimit = ['x-ratelimit-limit', 'xRatelimitLimit'];
-    //     const remaining = parseInt(getHttpProp(httpItem, keysRemain), 10);
-    //     const limit = parseInt(getHttpProp(httpItem, keysLimit), 10);
-    //     if (remaining && limit) {
-    //         remainingTokenWarning(limit, remaining);
-    //     } else {
-    //         LOG.WARN('No rate limit information found in response headers');
-    //     }
-    // }
+    const item: HEADER_CONTENT = splitHeaderAndContent(rawData);
+    const httpItem = getHttpFromHeader(item.header, options);
+    const status = getProp(httpItem, 'status', '0');
+    setLastLocation(httpItem, url, options);
     return {
         header: httpItem,
-        content: content.trim(), // TODO: check trim()
-        status: status.toString(),
-        success,
-        time: new Date().getTime() - start,
+        content: item.content,
+        status,
+        success: getSuccess(status, { ...options, url }),
+        time,
     };
 };
 
-/**
- * 🎯 get second level domain
- * @param {URL} url ➡️ full url
- * @returns {SLD} 📤 second level domain or empty string
- */
-export const getSLD = (url: string): SLD => {
-    const hostname = getHostname(url);
-
-    const hasDoubleTLD = url.match(DOUBLE_REGEX);
-    // extract SLD
-    const parts = hostname.split('.');
-    if (parts.length >= 2) {
-        if (hasDoubleTLD) {
-            return parts[parts.length - 3];
-        }
-        return parts[parts.length - 2];
-    }
-    return parts[0];
-    // better extract SLD
-    // https://stackoverflow.com/questions/8498592/extract-hostname-name-from-string
-};
-/**
- * 🎯 get hostname of an url (e.g. api.example.com)
- * @param {URL} url ➡️ full url
- * @returns {HOSTNAME} 📤 hostname only
- */
-export const getHostname = (url: URL): HOSTNAME => {
-    let result = url;
-    result = result.replace(/^[a-z]*?:[\/]{2,}/, ''); // remove protocol also wrong ///
-    result = result.replace(/^[w]{3,}\./, ''); // remove www. or wrong wwww
-    result = result.replace(/\/\//, ''); // remove www.
-    result = result.replace(/([^\/]+)\/.*?$/, '$1'); // remove folder
-    return result;
-};
+// API
+export const isHttp = isHTTP;

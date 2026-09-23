@@ -62,7 +62,11 @@
     },
     "dependencies": {
         "@robert.tools/cmd": "^1.0.0",
-        "@robert.tools/convert": "^1.0.0",
-        "@robert.tools/log": "^1.0.0"
+        "@robert.tools/convert": "^1.1.0",
+        "@robert.tools/curl": "^1.0.1",
+        "@robert.tools/log": "^1.0.0",
+        "@robert.tools/typings": "^1.0.4",
+        "@robert.tools/uri": "^1.0.0",
+        "@robert.tools/utils": "^1.1.0"
     }
 }

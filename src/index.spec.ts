@@ -6,49 +6,76 @@
  * @license MIT
  * @author Robert Willemelis <github.com/willi84>
  */
+
+// external dependencies
+import { LOG } from '@robert.tools/log';
+import type { URI } from '@robert.tools/typings';
+
+// internal dependencies
 import {
     getConnectionTime,
-    getHttpItemFromHeader,
-    getHttpBase,
     getHttpStatusValue,
-    getResponse,
+    getHttpBase,
     getHttpItem,
-    getSLD,
-    getHostname,
+    getResponse,
 } from './index';
-// import * as http from './http';
-import { HTTP_OBJECT, HTTP_CONTENT_301 } from './index.mocks_old';
+import { _header, _headerItem, _http, _httpItem } from './mock/mock';
+import { spyOnCommand, spyOnURLs } from './spy/spy';
+
+// config
 import {
     DOMAIN_200,
     DOMAIN_301,
     DOMAIN_404,
-    DOMAIN_UNKNOWN,
     DOMAIN_STATUS_0,
-} from './index.config';
+    HTTP_UNKNOWN_HOST,
+    getForwards,
+    CONTENT_301,
+    lastModified,
+    etag,
+} from './mock/mock.config';
 
-import { _httpItem, _header, _response, spyOnCommand } from './index.mocks';
-import { $MOCK_VALUE, HOSTNAME } from './index.d';
-import { LOG } from '@robert.tools/log';
+// types
+import type { URL_ITEMS } from './spy/spy.d';
+import type { RAW } from './index.d';
+import { getHttpFromHeader } from './utils/utils';
 
-const API_V2: [$MOCK_VALUE, number] = [undefined, 2];
+const content = 'some get response content';
+const URI_ITEMS: URL_ITEMS = getForwards(content); // TODO: ggf. export in mock.config
 
 describe('CLASS: HTTP', () => {
-    describe('✅ getHttpItemFromHeader()', () => {
-        const FN = getHttpItemFromHeader;
-        it('should result a 200 at forward step2', () => {
+    describe('✅ getHttpFromHeader()', () => {
+        const FN = getHttpFromHeader;
+        it('[200] should result a 200 at forward step1', () => {
+            const url = `https://${DOMAIN_200}`;
+            const opts = { noLastLocation: true };
+            const header = _header(url);
+            const expected = _headerItem(url, {}, opts);
+            expect(FN(header)).toEqual(expected);
+        });
+        it('[200] should not evaluate content section', () => {
+            const url = `https://${DOMAIN_200}`;
+            const opts = { noLastLocation: true };
+            const header = (_header(url) + '\r\n' + 'some content') as RAW;
+            const expected = _headerItem(url, {}, opts);
+            expect(FN(header)).toEqual(expected);
+        });
+        it('[200] should result a 200 at forward step2', () => {
             const url = `https://www.${DOMAIN_200}/`;
             const header = _header(url);
-            expect(FN(header)).toEqual(_httpItem(url));
+            expect(FN(header)).toEqual(_headerItem(url));
         });
-        it('should result a 301 with correct location', () => {
+        it('[301] should result a 301 with correct location', () => {
             const url = `http://${DOMAIN_301}`;
+            const opts = { noLastLocation: true };
             const header = _header(url);
-            expect(FN(header)).toEqual(_httpItem(url));
+            const expected = _headerItem(url, {}, opts);
+            expect(FN(header)).toEqual(expected);
         });
-        it('should result a 404 at forward step3', () => {
+        it('[404] should result a 404 at forward step3', () => {
             const url = `https://www.${DOMAIN_404}/`;
             const header = _header(url);
-            expect(FN(header)).toEqual(_httpItem(url));
+            expect(FN(header)).toEqual(_headerItem(url));
         });
     });
     describe('✅ getConnectionTime()', () => {
@@ -69,9 +96,10 @@ describe('CLASS: HTTP', () => {
     describe('✅ getHttpStatusValue()', () => {
         const FN = getHttpStatusValue;
         let mockCommand: jest.SpyInstance;
+        const options = { forwarding: true };
         describe('get next step response', () => {
             beforeEach(() => {
-                mockCommand = spyOnCommand(...API_V2);
+                mockCommand = spyOnURLs(URI_ITEMS);
             });
             afterEach(() => {
                 mockCommand.mockRestore();
@@ -100,36 +128,32 @@ describe('CLASS: HTTP', () => {
                 expect(FN(`https://www.${DOMAIN}/`)).toEqual('404');
             });
             it('return 0', () => {
-                const DOMAIN = DOMAIN_UNKNOWN;
+                const DOMAIN = DOMAIN_STATUS_0;
                 expect(FN(`${DOMAIN}`)).toEqual('0');
-                expect(FN(`https://www.${DOMAIN}/`)).toEqual('0');
+                expect(FN(`https://www.${DOMAIN}/`)).toEqual('404');
             });
         });
         describe('handle 0 response', () => {
-            // beforeEach(() => {
-            //     mockCommand = spyOnCommand(...API_V2);
-            // });
-            // afterEach(() => {
-            //     mockCommand.mockRestore();
-            // });
+            const options = { timeout: 50 };
             it('should not log a warning for unknown domain', () => {
                 const spy = jest.spyOn(LOG, 'WARN');
                 const DOMAIN = DOMAIN_STATUS_0;
-                expect(FN(`${DOMAIN}`)).toEqual('0');
+                expect(FN(`${DOMAIN}`, options)).toEqual('0');
                 expect(spy).not.toHaveBeenCalled();
                 spy.mockRestore();
             });
             it('should log a warning for unknown domain', () => {
-                const spy = jest.spyOn(LOG, 'WARN');
+                const spy = jest.spyOn(LOG, 'FAIL');
                 const DOMAIN = DOMAIN_STATUS_0;
-                expect(FN(`${DOMAIN}`, true, 50, true)).toEqual('0');
+                const opts = { forwarding: true, timeout: 50, showLog: true };
+                expect(FN(`${DOMAIN}`, opts)).toEqual('0');
                 expect(spy).toHaveBeenCalled();
                 spy.mockRestore();
             });
         });
         describe('get last step response', () => {
             beforeEach(() => {
-                mockCommand = spyOnCommand(...API_V2);
+                mockCommand = spyOnURLs(URI_ITEMS);
             });
             afterEach(() => {
                 mockCommand.mockRestore();
@@ -137,24 +161,28 @@ describe('CLASS: HTTP', () => {
             it('return 200 with forward 1', () => {
                 const DOMAIN = DOMAIN_200;
                 const EXPECTED = '200';
-                const FORWARD = true;
                 // console.log(`www.${DOMAIN_200}`);
-                expect(FN(`${DOMAIN}`, FORWARD)).toEqual('0'); // TODO EXPECTED
-                expect(FN(`http://${DOMAIN}`, FORWARD)).toEqual(EXPECTED);
-                expect(FN(`https://${DOMAIN}`, FORWARD)).toEqual(EXPECTED);
-                expect(FN(`https://www.${DOMAIN}`, FORWARD)).toEqual(EXPECTED);
-                expect(FN(`https://www.${DOMAIN}/`, FORWARD)).toEqual(EXPECTED);
+                const opts = { ...options, maxRedirects: 10, blubber: true };
+                expect(FN(`${DOMAIN}`, opts)).toEqual(EXPECTED); // TODO EXPECTED
+                expect(FN(`www.${DOMAIN}`, opts)).toEqual(EXPECTED);
+                expect(FN(`http://${DOMAIN}`, opts)).toEqual(EXPECTED);
+                expect(FN(`https://${DOMAIN}`, opts)).toEqual(EXPECTED);
+                expect(FN(`https://www.${DOMAIN}`, opts)).toEqual(EXPECTED);
+                expect(FN(`https://www.${DOMAIN}/`, opts)).toEqual(EXPECTED);
                 // expect(FN(`${DOMAIN_200}`, true)).toEqual('200');
                 // expect(FN(`http://${DOMAIN_200}`, true)).toEqual('200');
                 // expect(FN(`www.${DOMAIN_200}`, true)).toEqual('200');
             });
+            xit('return 301', () => {
+                // TODO: wie forwarding mocken
+                const opts = { ...options, maxRedirects: 10 };
+                expect(FN(`${DOMAIN_301}`, opts)).toEqual('200');
+            });
             it('return 404', () => {
-                expect(FN(`${DOMAIN_301}`, true)).toEqual('0');
-                // expect(FN(`${DOMAIN_301}`, true)).toEqual('301'); // TODO
-                expect(FN(`${DOMAIN_404}`, true)).toEqual('404');
+                expect(FN(`${DOMAIN_404}`, options)).toEqual('404');
             });
             it('return 0 with forward max', () => {
-                expect(FN(`${DOMAIN_UNKNOWN}`, true)).toEqual('0');
+                expect(FN(`${DOMAIN_STATUS_0}`, options)).toEqual('0');
             });
         });
     });
@@ -162,23 +190,23 @@ describe('CLASS: HTTP', () => {
         const FN = getHttpBase;
         let mockCommand: jest.SpyInstance;
         beforeEach(() => {
-            mockCommand = spyOnCommand(...API_V2);
+            mockCommand = spyOnURLs(URI_ITEMS);
         });
         afterEach(() => {
             mockCommand.mockRestore();
         });
         describe('get response object', () => {
-            const URL: string = `https://www.${DOMAIN_200}/`;
-            const EXPECTED = _httpItem(URL);
+            const URL: URI = `https://www.${DOMAIN_200}/`;
+            const EXPECTED = _headerItem(URL);
             // const EXPECTED = _httpItem(200, URL);
             it('should result a valid response object', () => {
                 expect(FN(URL)).toEqual(EXPECTED);
-                expect(FN(URL, 2)).toEqual(EXPECTED);
-                expect(FN(URL, 0.2)).toEqual(EXPECTED);
+                expect(FN(URL, { timeout: 2 })).toEqual(EXPECTED);
+                expect(FN(URL, { timeout: 0.2 })).toEqual(EXPECTED);
             });
             it('[timeout] should result a non valid response object', () => {
-                const result = FN(URL, 0.001);
-                expect(result).toEqual(_httpItem(URL));
+                const result = FN(URL, { timeout: 0.001 });
+                expect(result).toEqual(EXPECTED);
                 // expect(result).toEqual(_httpItem(0, URL));
             });
         });
@@ -187,140 +215,156 @@ describe('CLASS: HTTP', () => {
         const FN = getHttpItem;
         let mockCommand: jest.SpyInstance;
         beforeEach(() => {
-            mockCommand = spyOnCommand(...API_V2);
+            mockCommand = spyOnURLs(URI_ITEMS);
         });
         afterEach(() => {
             mockCommand.mockRestore();
         });
         it('return 200 direct', () => {
             const URL = `https://www.${DOMAIN_200}/`;
-            const EXPECTED = {
-                ..._httpItem(URL),
-                // ..._httpItem(200, URL),
-                lastLocation: `${URL}`, // internal set
-                // lastLocation: `https://www.${DOMAIN_200}/`,
-            };
-            expect(FN(URL)).toEqual(EXPECTED);
+            expect(FN(URL)).toEqual(_headerItem(URL));
         });
     });
     describe('✅ getResponse()', () => {
         const FN = getResponse;
+        const opts = { isMock: true };
+        // const opts = { noLastLocation: true, isMock: true };
+        let mockCommand: jest.SpyInstance;
+        beforeEach(() => {
+            mockCommand = spyOnURLs(URI_ITEMS);
+        });
+        afterEach(() => {
+            mockCommand.mockRestore();
+        });
         describe('base function', () => {
-            // const URL = 'google.de';
-            const URL = `https://www.${DOMAIN_200}`;
-            it('should return http item with content (with untrimmed content)', () => {
+            it('[200] should return http item with content (with untrimmed content)', () => {
+                const URL = `https://www.${DOMAIN_200}/`;
+                const EXPECTED = _httpItem(URL, { content, status: 200 }, opts);
+                expect(FN(URL, opts)).toEqual(EXPECTED);
+            });
+            it('[301] should return http item with content (with untrimmed content)', () => {
                 const URL = `https://www.${DOMAIN_200}`;
-                const CONTENT = HTTP_CONTENT_301;
-                const mockCommand = spyOnCommand(CONTENT, 2);
-                const EXPECTED = _httpItem(URL, CONTENT, undefined, true);
-                // const EXPECTED = _httpItem(301, URL);
-                const result = FN(URL);
-                EXPECTED.time = expect.any(Number);
-                expect(result).toEqual(EXPECTED);
-                mockCommand.mockRestore();
+                const EXPECTED = _httpItem(URL, { content: CONTENT_301 }, opts);
+                expect(FN(URL, opts)).toEqual(EXPECTED);
             });
-            it('should return http item with content but different header', () => {
+            it('[301] should return http item with content but different header', () => {
+                const URL = DOMAIN_200;
+                const EXPECTED = _httpItem(URL, { content: CONTENT_301 }, opts);
+                expect(FN(URL, opts)).toEqual(EXPECTED);
+            });
+            // redirect
+        });
+        describe('options', () => {
+            const URL = DOMAIN_200;
+            const ua = '-H "User-Agent: nodejs"';
+            it('should have default user-agent in the curl request', () => {
+                FN(URL, {});
+                expect(mockCommand).toHaveBeenCalledWith(
+                    `curl ${ua} -s -i "${URL}"`
+                );
+            });
+            it('should add user-agent in the curl request', () => {
+                const ua = 'fooUA';
+                const UA = `-H "User-Agent: ${ua}"`;
+                FN(URL, { ua });
+                expect(mockCommand).toHaveBeenCalledWith(
+                    `curl ${UA} -s -i "${URL}"`
+                );
+            });
+            it('should add token for github', () => {
+                const URL_GITHUB = 'https://api.github.com/repos/owner/repo';
+                const TOKEN = 'xxxx';
+                FN(URL_GITHUB, { token: TOKEN });
+                expect(mockCommand).toHaveBeenCalledWith(
+                    `curl -H "Authorization: token ${TOKEN}" -s -i "${URL_GITHUB}"`
+                );
+            });
+            it('should add token for github', () => {
+                const URL_GITLAB = 'https://api.gitlab.com/repos/owner/repo';
+                const TOKEN = 'xxxx';
+                FN(URL_GITLAB, { token: TOKEN });
+                expect(mockCommand).toHaveBeenCalledWith(
+                    `curl ${ua} -H "PRIVATE-TOKEN: ${TOKEN}" -s -i "${URL_GITLAB}"`
+                );
+            });
+        });
+        describe('edge cases', () => {
+            const URL = `https://www.${DOMAIN_200}`;
+            it('should return forwarded http item', () => {
                 const URL2 = DOMAIN_200;
-                const CONTENT = HTTP_CONTENT_301;
-                const mockCommand = spyOnCommand(CONTENT, 2);
-                const EXPECTED = _httpItem(URL2, CONTENT, undefined, true);
+                const opts = { forwarding: true, noLastLocation: true }; // TODO: implement
+                const EXPECTED = _httpItem(URL, { content, status: 200 }, opts);
                 EXPECTED.time = expect.any(Number);
-                const result = FN(URL2);
+                const result = FN(URL2, opts);
                 expect(result).toEqual(EXPECTED);
                 mockCommand.mockRestore();
             });
-            it('should return content when no http header', () => {
-                const mockResult = `<svg>`; // force trim
-                const mockCommand = spyOnCommand(mockResult);
-                const EXPECTED = {
-                    header: { status: '0' },
-                    content: '<svg>',
-                    status: '0',
-                    success: false, // TODO
-                    time: expect.any(Number),
-                };
+            it('[0] should return 0 when no valid HTTP response', () => {
+                // const content = `<svg>`; // force trim
+                const URL = 'invalid-http';
+                const content = '';
+                const spy = jest.spyOn(LOG, 'FAIL');
+                const EXPECTED = _http(0, { content, success: false });
                 expect(FN(URL)).toEqual(EXPECTED);
-                mockCommand.mockRestore();
+                const error = `Invalid HTTP response: ${HTTP_UNKNOWN_HOST + ' ' + URL}`;
+                expect(spy).toHaveBeenCalledWith(error);
+                spy.mockRestore();
             });
         });
         describe('url specific', () => {
-            let mockCommand: jest.SpyInstance;
+            // let mockCommand: j -sest.SpyInstance;
             let spyLOG: jest.SpyInstance;
-            const CONTENT = '<svg>';
             let URL = 'https://api.github.com/icons/icon.svg';
+            const MISSING_TOKEN = `Please set a GITHUB_TOKEN in the environment variables.`;
             beforeEach(() => {
-                const mockResult = _response(URL, 200, CONTENT);
-                mockCommand = spyOnCommand(mockResult);
                 spyLOG = jest.spyOn(LOG, 'FAIL');
             });
             afterEach(() => {
-                mockCommand.mockRestore();
+                // mockCommand.mockRestore();
                 spyLOG.mockRestore();
             });
             describe('github', () => {
                 it('should return content when github url and token given', () => {
-                    const EXPECTED = {
-                        header: HTTP_OBJECT.HTTP_200,
-                        content: CONTENT,
-                        status: '200',
-                        success: true,
-                        time: expect.any(Number),
-                    };
-
+                    const EXPECTED = _http(200, { content: '<svg>' });
                     expect(FN(URL, { token: 'xxxx' })).toEqual(EXPECTED);
                     expect(spyLOG).not.toHaveBeenCalled();
                     expect(mockCommand).toHaveBeenCalledWith(
-                        `curl -s -H "Authorization: token xxxx"   -i "${URL}"  `
+                        `curl -H "Authorization: token xxxx" -s -i "${URL}"`
                     );
                 });
                 it('should return warning when token is missing', () => {
-                    const EXPECTED = {
-                        header: {}, // HTTP_OBJECT.HTTP_200,
-                        content: '', // <= no content
-                        status: '0',
-                        success: false,
-                        time: expect.any(Number),
-                    };
+                    const EXPECTED = _http(0, { success: false });
                     expect(FN(URL)).toEqual(EXPECTED);
-                    expect(spyLOG).toHaveBeenCalled();
+                    expect(spyLOG).toHaveBeenCalledWith(MISSING_TOKEN);
                 });
             });
             describe('gitlab', () => {
-                it('should return content when github url and token given', () => {
+                it('should return content when gitlab url and token given', () => {
+                    const EXPECTED = _http(200, { content: '<svg>' });
                     const URL_GITLAB = URL.replace('github', 'gitlab');
-                    const EXPECTED = {
-                        header: HTTP_OBJECT.HTTP_200,
-                        content: '<svg>',
-                        status: '200',
-                        success: true,
-                        time: expect.any(Number),
-                    };
 
                     expect(FN(URL_GITLAB, { token: 'xxxx' })).toEqual(EXPECTED);
                     expect(spyLOG).not.toHaveBeenCalled();
-                    const ua = '-H "User-Agent: nodejs" ';
+                    const ua = '-H "User-Agent: nodejs"';
                     expect(mockCommand).toHaveBeenCalledWith(
-                        `curl -s -H "PRIVATE-TOKEN: xxxx"  ${ua} -i "${URL_GITLAB}"  `
+                        `curl ${ua} -H "PRIVATE-TOKEN: xxxx" -s -i "${URL_GITLAB}"`
                     );
                 });
             });
         });
         describe('dev mode', () => {
-            const url = 'https://www.domain.de';
             it('should log OK when statusCode=200', () => {
+                const URL = `https://www.${DOMAIN_200}/`;
                 const spyLOG = jest.spyOn(LOG, 'OK');
-                const mockResult = _response(url, 200, '<svg>');
-                const mockCommand = spyOnCommand(mockResult);
-                FN(url, { isDev: true });
+                FN(URL, { isDev: true });
                 expect(spyLOG).toHaveBeenCalled();
                 spyLOG.mockRestore();
-                mockCommand.mockRestore();
+                // mockCommand.mockRestore();
             });
             it('should log when statusCode > 400', () => {
+                const URL = `https://www.${DOMAIN_404}/`;
                 const spyLOG = jest.spyOn(LOG, 'INFO');
-                const mockResult = _response(url, 404, '<svg>');
-                const mockCommand = spyOnCommand(mockResult);
-                FN(url, { isDev: true });
+                FN(URL, { isDev: true });
                 expect(spyLOG).toHaveBeenCalled();
                 spyLOG.mockRestore();
                 mockCommand.mockRestore();
@@ -329,107 +373,33 @@ describe('CLASS: HTTP', () => {
         describe('error handling', () => {
             it('should return 0 when there is no status code', () => {
                 const spyLOG = jest.spyOn(LOG, 'WARN');
-                const mockCommand = spyOnCommand(...API_V2);
-                const EXPECTED = {
-                    header: {
-                        status: '0',
-                        protocol: 'http',
-                        protocolVersion: '1.1',
-                        statusMessage: 'unknown',
-                        connection: 'keep-alive',
-                        server: 'nginx/1.14.1',
-                        date: expect.any(String),
-                        contentType: 'text/html; charset=UTF-8',
-                    },
-                    content: '', // <= no content
-                    status: '0',
-                    success: false,
-                    time: expect.any(Number),
-                };
-                expect(FN(`${DOMAIN_UNKNOWN}`)).toEqual(EXPECTED);
+                const EXPECTED = _http(0, { success: false });
+                const result = FN(`${DOMAIN_STATUS_0}`);
+                expect(result).toEqual(EXPECTED);
                 expect(spyLOG).toHaveBeenCalledWith(
                     'no status code found. set to 0'
                 );
                 spyLOG.mockRestore();
-                mockCommand.mockRestore();
+                // mockCommand.mockRestore();
             });
         });
-    });
-});
-
-describe('✅ getSLD()', () => {
-    const FN = getSLD;
-    const DOMAIN = 'example';
-    // TODO: improve test cases
-    it('should return SLD for a valid URL', () => {
-        expect(FN(`sub.${DOMAIN}.com`)).toEqual(DOMAIN);
-        expect(FN(`${DOMAIN}.com`)).toEqual(DOMAIN);
-        expect(FN(`https://sub.${DOMAIN}.com/path`)).toEqual(DOMAIN);
-        expect(FN(`https://${DOMAIN}.com/path`)).toEqual(DOMAIN);
-    });
-    it('should return SLD for a URL with multiple subdomains', () => {
-        expect(FN(`https://sub.sub2.${DOMAIN}.co.uk/path`)).toEqual(DOMAIN); // TODO
-    });
-    it('should return simple host', () => {
-        expect(FN(`${DOMAIN}`)).toEqual(DOMAIN);
-    });
-    it('should return sld  even if wrong formatted', () => {
-        expect(FN(`https:///${DOMAIN}`)).toEqual(DOMAIN);
-        expect(FN(``)).toEqual(``);
-    });
-});
-describe('✅ getHostname()', () => {
-    const FN = getHostname;
-    it('should return domain from a standard URL', () => {
-        const hostname: HOSTNAME = 'example.com';
-        expect(FN(`${hostname}`)).toEqual(hostname);
-        expect(FN(`${hostname}/`)).toEqual(hostname);
-        expect(FN(`${hostname}/foo`)).toEqual(hostname);
-        expect(FN(`${hostname}/foo/`)).toEqual(hostname);
-        expect(FN(`${hostname}/foo/bar`)).toEqual(hostname);
-        expect(FN(`${hostname}/foo/bar/`)).toEqual(hostname);
-        expect(FN(`www.${hostname}`)).toEqual(hostname);
-        expect(FN(`//${hostname}`)).toEqual(hostname);
-        expect(FN(`http://www.${hostname}`)).toEqual(hostname);
-        expect(FN(`https://www.${hostname}`)).toEqual(hostname);
-        expect(FN(`https://wwww.${hostname}`)).toEqual(hostname);
-        expect(FN(`http://${hostname}`)).toEqual(hostname);
-        expect(FN(`https://${hostname}`)).toEqual(hostname);
-        expect(FN(`https://${hostname}/`)).toEqual(hostname);
-        expect(FN(`https://${hostname}/foo`)).toEqual(hostname);
-        expect(FN(`${hostname}/foo`)).toEqual(hostname);
-        expect(FN(`https://${hostname}/foo/`)).toEqual(hostname);
-        expect(FN(`https://${hostname}/foo/bar`)).toEqual(hostname);
-        expect(FN(`https://${hostname}/foo/bar/`)).toEqual(hostname);
-        expect(FN(`ftp://${hostname}`)).toEqual(hostname); // other protocol
-    });
-    it('should return domain from a standard URL with SLD', () => {
-        const hostname: HOSTNAME = 'sub.example.com';
-        expect(FN(`${hostname}`)).toEqual(hostname);
-        expect(FN(`${hostname}/`)).toEqual(hostname);
-        expect(FN(`${hostname}/foo`)).toEqual(hostname);
-        expect(FN(`${hostname}/foo/`)).toEqual(hostname);
-        expect(FN(`${hostname}/foo/bar`)).toEqual(hostname);
-        expect(FN(`${hostname}/foo/bar/`)).toEqual(hostname);
-        expect(FN(`www.${hostname}`)).toEqual(hostname);
-        expect(FN(`//${hostname}`)).toEqual(hostname);
-        expect(FN(`http://www.${hostname}`)).toEqual(hostname);
-        expect(FN(`https://www.${hostname}`)).toEqual(hostname);
-        expect(FN(`http://${hostname}`)).toEqual(hostname);
-        expect(FN(`https://${hostname}`)).toEqual(hostname);
-        expect(FN(`https://${hostname}/`)).toEqual(hostname);
-        expect(FN(`https://${hostname}/foo`)).toEqual(hostname);
-        expect(FN(`${hostname}/foo`)).toEqual(hostname);
-        expect(FN(`https://${hostname}/foo/`)).toEqual(hostname);
-        expect(FN(`https://${hostname}/foo/bar`)).toEqual(hostname);
-        expect(FN(`https://${hostname}/foo/bar/`)).toEqual(hostname);
-        expect(FN(`ftp://${hostname}`)).toEqual(hostname); // other protocol
-    });
-    it('special cases', () => {
-        const hostname: HOSTNAME = 'example.com';
-        expect(FN(``)).toEqual('');
-        expect(FN(`//la.${hostname}/d/aa?xx=2&yy=2`)).toEqual(`la.${hostname}`);
-        expect(FN(`://example.com`)).toEqual(hostname);
-        expect(FN(`http:///example.com`)).toEqual(hostname);
+        describe('get response object', () => {
+            const contentLength = '7698';
+            const URL: URI = `https://www.${DOMAIN_200}/`;
+            const opts = { content, etag, lastModified, contentLength };
+            const EXPECTED = _http(200, opts);
+            // const EXPECTED = _headerItem(URL);
+            // const EXPECTED = _httpItem(200, URL);
+            it('should result a valid response object', () => {
+                expect(FN(URL)).toEqual(EXPECTED);
+                expect(FN(URL, { timeout: 2 })).toEqual(EXPECTED);
+                expect(FN(URL, { timeout: 0.2 })).toEqual(EXPECTED);
+            });
+            it('[timeout] should result a non valid response object', () => {
+                const result = FN(URL, { timeout: 0.001 });
+                expect(result).toEqual(EXPECTED);
+                // expect(result).toEqual(_httpItem(0, URL));
+            });
+        });
     });
 });

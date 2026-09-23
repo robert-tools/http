@@ -7,22 +7,9 @@
  * @license MIT
  * @author Robert Willemelis <github.com/willi84>
  */
+
 export type MOCKED_URL = { [key: string]: string };
-export type MOCKED_URLS_TYPE = { [key: string]: MOCKED_URL };
 export type MOCKED_RESPONSE = { [key: string]: string };
-export type MOCKED_RESPONSES_TYPE = { [key: string]: MOCKED_RESPONSE };
-
-export type $MOCK_VALUE = string | undefined;
-
-type StringLike<T extends string> = string & { __brand?: T }; // avoid collision not working with build-in prototypes of a string (e.g. replace())
-
-export type TLD = `${string}`;
-export type SLD = `${string}`;
-export type SUBDOMAIN = `${string}`;
-export type HOSTNAME = StringLike<`${SUBDOMAIN | ''}${SLD}.${TLD}`>;
-export type DOMAIN = `${SLD}.${TLD}`;
-export type FQDN = `http${'s' | ''}://${DOMAIN}`; // fully qualified domain name
-export type URL = StringLike<`${FQDN | DOMAIN}`>;
 
 export type HTTP_OPTS = {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -30,12 +17,16 @@ export type HTTP_OPTS = {
     ua?: string; // user agent string
     acceptHeader?: string; // additional curl type options
     type?: 'json' | 'html' | 'text' | 'xml';
+    forwarding?: boolean; // whether to follow redirects
     token?: string; // auth token
     isDev?: boolean; // development mode
     showLog?: boolean; // whether to show logs or not
+    noLastLocation?: boolean; // whether to ignore the last location in headers
+    isMock?: boolean; // whether to use some mock data
+    data?: any;
 };
 
-export type HTTPStatusBase = {
+export type HTTP = {
     protocol: string;
     protocolVersion: string;
     status: string;
@@ -43,34 +34,20 @@ export type HTTPStatusBase = {
     server: string;
     date: string;
     contentType: string;
+    location?: URI; // next location
+    lastLocation?: URI; // the last location in headers
     // Define other common properties here
     [key: string]: string;
 };
 export type CurlItem = {
-    header: HTTPStatusBase | {};
+    header: HTTP;
+    // header: HTTPStatusBase | {}; // TODO: delete
     content: string;
     status: string;
     success: boolean;
     time?: number; // Optional, for performance measurement
 };
 
-export type MOCKED_URL = { [key: string]: string };
-export type MOCKED_URLS_TYPE = { [key: string]: MOCKED_URL };
-export type MOCKED_RESPONSE = { [key: string]: string };
-export type MOCKED_RESPONSES_TYPE = { [key: string]: MOCKED_RESPONSE };
-
-export type $MOCK_VALUE = string | undefined;
-
-type StringLike<T extends string> = string & { __brand?: T }; // avoid collision not working with build-in prototypes of a string (e.g. replace())
-
-export type TLD = `${string}`;
-export type SLD = `${string}`;
-export type SUBDOMAIN = `${string}`;
-export type HOSTNAME = StringLike<`${SUBDOMAIN | ''}${SLD}.${TLD}`>;
-export type DOMAIN = `${SLD}.${TLD}`;
-export type FQDN = `http${'s' | ''}://${DOMAIN}`; // fully qualified domain name
-export type URL = StringLike<`${FQDN | DOMAIN}`>;
-
 export type HTTPStatusBase = {
     protocol: string;
     protocolVersion: string;
@@ -83,24 +60,19 @@ export type HTTPStatusBase = {
     [key: string]: string;
 };
 
-export type HTTP_STATUS = HTTPStatusBase & {
-    // Define specific properties for status code 200
-    contentLength: string;
-    lastModified: string;
-};
-
-export type HTTP_STATUS_300 = HTTPStatusBase & {
-    // Define specific properties for status code 300
-    location: string;
-};
-export type HTTP_OBJECTS = {
-    [key: string]: HTTPStatusBase;
-};
+// export type HTTP_OBJECTS = {
+//     [key: string]: HTTP_BASE;
+// };
 export type OPTS = {
     [key: string]: any;
 };
-// test for object but not includes array
+// test for object but not includes array // TODO: unsused
 export type PlainObject<T = unknown> = Record<string, T> & {
     [n: number]: never;
 };
-export type NumericString = string & { readonly __type: 'NumericString' };
+
+// mock responses
+type HTTPResponse = `HTTP${string}`;
+
+export type RAW = HTTPResponse | `\n${HTTPResponse}` | `\r\n${HTTPResponse}`;
+export type PARAM = StringLike<`${string}`>;
