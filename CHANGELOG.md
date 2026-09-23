@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.1
+
+### 🐛 bug fixes
+
+- build should remove the `dist` directory before compiling
+
 ## 2.0.0
 
 This update forces a major change in the API and internal structure.
