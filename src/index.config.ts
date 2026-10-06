@@ -1,7 +1,7 @@
 /**
  * ⚙️ config for HTTP
  * @module backend/_shared/HTTP
- * @version 2.0.2
+ * @version 2.0.3
  * @date 2026-10-06
  * @lastModified 2025-10-13
  * @license MIT

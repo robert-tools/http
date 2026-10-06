@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.3
+
+### 🐛 bug fixes
+
+- move @robert.tools/testing dependency from dev to prod
+
 ## 2.0.2
 
 ### 🐛 bug fixes
