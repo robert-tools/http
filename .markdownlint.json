@@ -3,6 +3,8 @@
         "siblings_only": true
     },
     "MD033": {
-      "allowed_elements": ["description"]
+        "allowed_elements": [
+            "description"
+        ]
     }
 }
