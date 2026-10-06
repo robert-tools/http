@@ -2,6 +2,10 @@
 
 ## 2.0.2
 
+### 🐛 bug fixes
+
+- fix issue with typings.d.ts
+
 ### ⚙️ chore
 
 - add markdownlinting

@@ -129,8 +129,8 @@ export const getHttpFromHeader = (raw: RAW, opts: HTTP_OPTS = OPTS): HTTP => {
         const item = convert2KeyValue(line.trim());
         const key = convert2CamelCase(item.key);
 
-        // stop at body ([header '\r' body])
-        if (line === '\r' || stop === true) { // cause split \n
+        // stop at body ([header '\r' body]) => cause split \n
+        if (line === '\r' || stop === true) {
             stop = true;
         } else if (key.indexOf('http/') === 0) {
             const version = key.split('/')[1];
