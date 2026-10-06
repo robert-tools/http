@@ -8,28 +8,29 @@
  * @author Robert Willemelis <github.com/willi84>
  */
 
-// external dependencies
+// 📦 external dependencies
 import { LOG } from '@robert.tools/log';
 import { command } from '@robert.tools/cmd';
-import { getProp } from '@robert.tools/utils';
+import { getProp, isType } from '@robert.tools/utils';
 import { NUM, URI } from '@robert.tools/typings';
 import { curl } from '@robert.tools/curl';
 
-// internal dependencies
-import { BASE_HTTP_OPTS as OPTS, STANDARD_CURL_TIMEOUT } from './index.config';
+// 📦 internal dependencies
 import {
     getCurlOpts,
     getDefaultResponse,
     getHttpFromHeader,
     getSuccess,
-    isHTTP,
     setLastLocation,
     splitHeaderAndContent,
 } from './utils/utils';
 
-// types
+// 🧩 types
 import type { CurlItem, HTTP_OPTS, HTTP } from './index.d';
 import type { HEADER_CONTENT } from './utils/utils.d';
+
+// ⚓ CONSTANTS
+import { BASE_HTTP_OPTS as OPTS, STANDARD_CURL_TIMEOUT } from './index.config';
 
 /**
  * 🎯 get the time of connecting to an url
@@ -152,16 +153,22 @@ export const getResponse = (url: URI, options: HTTP_OPTS = OPTS): CurlItem => {
     const time = isMock ? 23 : new Date().getTime() - start;
     const rawData = curl(url, curlOpts); // run commmand
     // break if no valid HTTP response is received
-    if (!isHTTP(rawData)) {
-        LOG.FAIL(`Invalid HTTP response: ${rawData}`);
-        return getDefaultResponse(start, isMock); // fallback
+    if (!isType(rawData, 'HTTP')) {
+        if (rawData.toLowerCase().indexOf('connection refused') !== -1) {
+            LOG.OK(`no host found: ${rawData}`);
+            // TODO: content
+        } else {
+            LOG.FAIL(`Invalid HTTP response: ${rawData}`);
+            return getDefaultResponse(start, isMock); // fallback
+        }
     }
     const item: HEADER_CONTENT = splitHeaderAndContent(rawData);
     const httpItem = getHttpFromHeader(item.header, options);
+    const defaultHeader = getDefaultResponse(start, isMock).header;
     const status = getProp(httpItem, 'status', '0');
     setLastLocation(httpItem, url, options);
     return {
-        header: httpItem,
+        header: { ...defaultHeader, ...httpItem }, // base: http status 0
         content: item.content,
         status,
         success: getSuccess(status, { ...options, url }),
@@ -170,4 +177,4 @@ export const getResponse = (url: URI, options: HTTP_OPTS = OPTS): CurlItem => {
 };
 
 // API
-export const isHttp = isHTTP;
+export const isHttp = (value: any) => isType(value, 'HTTP');

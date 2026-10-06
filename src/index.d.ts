@@ -26,46 +26,33 @@ export type HTTP_OPTS = {
     data?: any;
 };
 
-export type HTTP = {
+export type PROTOCOL_STATUS = {
+    status: NUM;
+    statusMessage: string;
     protocol: string;
     protocolVersion: string;
-    status: string;
-    statusMessage: string;
+    lastLocation?: URI; // the last location in headers
+};
+
+export type HTTP = PROTOCOL_STATUS & {
     server: string;
     date: string;
     contentType: string;
     location?: URI; // next location
-    lastLocation?: URI; // the last location in headers
     // Define other common properties here
     [key: string]: string;
 };
 export type CurlItem = {
     header: HTTP;
-    // header: HTTPStatusBase | {}; // TODO: delete
     content: string;
     status: string;
     success: boolean;
     time?: number; // Optional, for performance measurement
 };
 
-export type HTTPStatusBase = {
-    protocol: string;
-    protocolVersion: string;
-    status: string;
-    statusMessage: string;
-    server: string;
-    date: string;
-    contentType: string;
-    // Define other common properties here
-    [key: string]: string;
-};
-
-// export type HTTP_OBJECTS = {
-//     [key: string]: HTTP_BASE;
+// export type OPTS = {
+//     [key: string]: any;
 // };
-export type OPTS = {
-    [key: string]: any;
-};
 // test for object but not includes array // TODO: unsused
 export type PlainObject<T = unknown> = Record<string, T> & {
     [n: number]: never;
@@ -76,3 +63,12 @@ type HTTPResponse = `HTTP${string}`;
 
 export type RAW = HTTPResponse | `\n${HTTPResponse}` | `\r\n${HTTPResponse}`;
 export type PARAM = StringLike<`${string}`>;
+
+// TODO: external in testing.d
+export type MOCK_CONFIG = {
+    [key: string]: {
+        status?: number;
+        order?: string[];
+        content?: string;
+    };
+};

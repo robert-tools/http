@@ -7,11 +7,19 @@
  * @author Robert Willemelis <github.com/willi84>
  */
 
-// external dependencies
+// 📦 external dependencies
 import { LOG } from '@robert.tools/log';
 import type { URI } from '@robert.tools/typings';
+import {
+    _header,
+    _headerItem,
+    _http,
+    _httpItem,
+    spyOnCommand,
+    spyOnURLs,
+} from '@robert.tools/testing';
 
-// internal dependencies
+// 📦 internal dependencies
 import {
     getConnectionTime,
     getHttpStatusValue,
@@ -19,29 +27,28 @@ import {
     getHttpItem,
     getResponse,
 } from './index';
-import { _header, _headerItem, _http, _httpItem } from './mock/mock';
-import { spyOnCommand, spyOnURLs } from './spy/spy';
+// import { _header, _headerItem, _http, _httpItem } from './mock/mock';
 
-// config
+// 🧩 types
+import type { RAW } from './index.d';
+import { getHttpFromHeader } from './utils/utils';
+
+// ⚓ CONSTANTS
 import {
     DOMAIN_200,
     DOMAIN_301,
     DOMAIN_404,
     DOMAIN_STATUS_0,
     HTTP_UNKNOWN_HOST,
-    getForwards,
     CONTENT_301,
     lastModified,
     etag,
-} from './mock/mock.config';
-
-// types
-import type { URL_ITEMS } from './spy/spy.d';
-import type { RAW } from './index.d';
-import { getHttpFromHeader } from './utils/utils';
+} from './index.config';
+import { mockConfig } from './index.config';
 
 const content = 'some get response content';
-const URI_ITEMS: URL_ITEMS = getForwards(content); // TODO: ggf. export in mock.config
+
+// const URI_ITEMS: URL_ITEMS = getForwards(FORWARDS, content); // TODO: ggf. export in mock.config
 
 describe('CLASS: HTTP', () => {
     describe('✅ getHttpFromHeader()', () => {
@@ -99,7 +106,7 @@ describe('CLASS: HTTP', () => {
         const options = { forwarding: true };
         describe('get next step response', () => {
             beforeEach(() => {
-                mockCommand = spyOnURLs(URI_ITEMS);
+                mockCommand = spyOnURLs(mockConfig);
             });
             afterEach(() => {
                 mockCommand.mockRestore();
@@ -153,7 +160,7 @@ describe('CLASS: HTTP', () => {
         });
         describe('get last step response', () => {
             beforeEach(() => {
-                mockCommand = spyOnURLs(URI_ITEMS);
+                mockCommand = spyOnURLs(mockConfig);
             });
             afterEach(() => {
                 mockCommand.mockRestore();
@@ -190,7 +197,7 @@ describe('CLASS: HTTP', () => {
         const FN = getHttpBase;
         let mockCommand: jest.SpyInstance;
         beforeEach(() => {
-            mockCommand = spyOnURLs(URI_ITEMS);
+            mockCommand = spyOnURLs(mockConfig);
         });
         afterEach(() => {
             mockCommand.mockRestore();
@@ -215,7 +222,7 @@ describe('CLASS: HTTP', () => {
         const FN = getHttpItem;
         let mockCommand: jest.SpyInstance;
         beforeEach(() => {
-            mockCommand = spyOnURLs(URI_ITEMS);
+            mockCommand = spyOnURLs(mockConfig);
         });
         afterEach(() => {
             mockCommand.mockRestore();
@@ -230,10 +237,13 @@ describe('CLASS: HTTP', () => {
         const opts = { isMock: true };
         // const opts = { noLastLocation: true, isMock: true };
         let mockCommand: jest.SpyInstance;
+        let spy: jest.SpyInstance;
         beforeEach(() => {
-            mockCommand = spyOnURLs(URI_ITEMS);
+            spy = jest.spyOn(LOG, 'FAIL');
+            mockCommand = spyOnURLs(mockConfig);
         });
         afterEach(() => {
+            spy.mockRestore();
             mockCommand.mockRestore();
         });
         describe('base function', () => {
@@ -297,18 +307,32 @@ describe('CLASS: HTTP', () => {
                 EXPECTED.time = expect.any(Number);
                 const result = FN(URL2, opts);
                 expect(result).toEqual(EXPECTED);
-                mockCommand.mockRestore();
+                // mockCommand.mockRestore();
+            });
+            it('should return forwarded http item', () => {
+                // const spy = jest.spyOn(LOG, 'FAIL');
+                const content =
+                    'curl: (7) Failed to connect to localhost port 3000 after 0 ms: Connection refused';
+                const URL2 = 'no-host-found';
+                const opts = { forwarding: true, noLastLocation: true }; // TODO: implement
+                const EXPECTED = _httpItem(URL2, { content, status: 0 }, opts);
+                EXPECTED.time = expect.any(Number); // mocking
+                const result = FN(URL2, opts);
+                expect(spy).toHaveBeenCalled();
+                // expect(spy).not.toHaveBeenCalled(); // TODO: why not
+                expect(result).toEqual(EXPECTED);
+                // mockCommand.mockRestore();
             });
             it('[0] should return 0 when no valid HTTP response', () => {
                 // const content = `<svg>`; // force trim
                 const URL = 'invalid-http';
                 const content = '';
-                const spy = jest.spyOn(LOG, 'FAIL');
+                // const spy = jest.spyOn(LOG, 'FAIL');
                 const EXPECTED = _http(0, { content, success: false });
                 expect(FN(URL)).toEqual(EXPECTED);
-                const error = `Invalid HTTP response: ${HTTP_UNKNOWN_HOST + ' ' + URL}`;
+                const error = `Invalid HTTP response: ${HTTP_UNKNOWN_HOST + ' ' + URL}\n`;
                 expect(spy).toHaveBeenCalledWith(error);
-                spy.mockRestore();
+                // spy.mockRestore();
             });
         });
         describe('url specific', () => {

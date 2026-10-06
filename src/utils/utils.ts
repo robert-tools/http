@@ -1,19 +1,20 @@
-// external dependencies
+// 📦 external dependencies
 import { URI } from '@robert.tools/typings';
-import { getProp } from '@robert.tools/utils';
+import { getProp, toType } from '@robert.tools/utils';
 import { LOG } from '@robert.tools/log';
-
-// internal dependencies
-import { BASE_HTTP_OPTS as OPTS } from '../index.config';
-import { DEFAULT_HTTP } from './utils.config';
-import { MOCK_TIME } from '../mock/mock.config';
-import { _http } from '../mock/mock';
-
-// types
-import type { HEADER_CONTENT } from './utils.d';
-import type { CurlItem, HTTP, HTTP_OPTS, RAW } from './../index.d';
 import type { CURL_OPTS } from '@robert.tools/curl';
 import { convert2CamelCase, convert2KeyValue } from '@robert.tools/convert';
+
+// 📦 internal dependencies
+
+// ⚙️ config
+import { BASE_HTTP_OPTS as OPTS, MOCK_TIME } from '../index.config';
+import { DEFAULT_HTTP } from './utils.config';
+
+// 🧩 types
+import type { HEADER_CONTENT } from './utils.d';
+import type { CurlItem, HTTP, HTTP_OPTS, RAW } from './../index.d';
+import { _http } from '@robert.tools/testing';
 
 /**
  * 🎯 check if timeout is defined
@@ -53,14 +54,14 @@ export const setLastLocation = (item: HTTP, url: URI, opts: HTTP_OPTS) => {
 export const splitHeaderAndContent = (raw: string): HEADER_CONTENT => {
     const hasHTTP = /^\n?HTTP\//.test(raw);
     let data = raw.replace(/^\n/, ''); // remove first empty line if exists
-    const splitted = data.split(/\r?\n\r?\n/);
+    const splitted = data.split(/\r?\n\r?\n/); // TODO: mehrer \n\n\n
     const headerString = splitted[0].replace(/\r?\n$/, '');
-    const header = hasHTTP ? toHTTP(headerString) : DEFAULT_HTTP;
+    const header = hasHTTP ? <RAW>toType(headerString) : DEFAULT_HTTP;
     const contentItem = splitted.slice(1).join('\n');
     const content = hasHTTP ? contentItem : data;
     return {
         header,
-        content: content.trim(),
+        content: content.trim(), // TODO: mehrer \n\n
     };
 };
 
@@ -115,27 +116,6 @@ export const getSuccess = (status: string, opts: any = {}): boolean => {
 };
 
 /**
- * 🎯 Checks if a string is a valid HTTP response
- * @param {string} value ➡️ The string value to check.
- * @returns {boolean} 📤 True if the string is a valid HTTP response, false otherwise.
- */
-export const isHTTP = (value: string): boolean => {
-    return /^(?:\r?\n)?HTTP\//.test(value);
-};
-
-/**
- * 🎯 converts a string to an HTTP type, ensuring it starts with "HTTP/".
- * @param {string} value ➡️ The string value to convert to an HTTP type.
- * @returns {RAW} 📤 The converted HTTP string.
- */
-export const toHTTP = (value: string): RAW => {
-    if (!isHTTP(value)) {
-        LOG.FAIL('Invalid HTTP response: ' + value);
-    }
-
-    return value as RAW;
-};
-/**
  * 🎯 get minimal http item
  * @param {RAW} raw ➡️ The raw HTTP header string.
  * @param {HTTP_OPTS} opts ➡️ Optional configuration object containing forwarding, timeout, debug, and method.
@@ -150,7 +130,7 @@ export const getHttpFromHeader = (raw: RAW, opts: HTTP_OPTS = OPTS): HTTP => {
         const key = convert2CamelCase(item.key);
 
         // stop at body ([header '\r' body])
-        if (line === '\r' || stop === true) {
+        if (line === '\r' || stop === true) { // cause split \n
             stop = true;
         } else if (key.indexOf('http/') === 0) {
             const version = key.split('/')[1];

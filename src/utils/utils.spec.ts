@@ -1,26 +1,27 @@
-// external dependencies
+// 📦 external dependencies
 import { LOG } from '@robert.tools/log';
+import { toType } from '@robert.tools/utils';
 
-// internal dependencies
+// 📦 internal dependencies
 import {
     hasTimeout,
     setLastLocation,
     splitHeaderAndContent,
     getDefaultResponse,
-    toHTTP,
-    isHTTP,
     getSuccess,
     getCurlOpts,
 } from './utils';
-import { _http } from '../mock/mock';
 
-// config
+// ⚙️ config
 import { DEFAULT_HTTP } from './utils.config';
 
-// types
-import { HTTP, HTTP_OPTS } from './../index.d';
+// 🧩 types
+import { HTTP, HTTP_OPTS, RAW } from './../index.d';
+import { _http } from '@robert.tools/testing';
 
+// ⚓ CONSTANTS
 const DOMAIN = 'http://example.com';
+
 describe('✅ hasTimeout()', () => {
     const FN = hasTimeout;
     it('should return true if timeout is less than 0.01', () => {
@@ -74,11 +75,11 @@ describe('✅ splitHeaderAndContent', () => {
     const http2 = `HTTP/2 200 OK`;
     it('should return content based on http item and raw response', () => {
         const raw = `HTTP/1.1 200 OK\n\n${content}`;
-        expect(FN(raw)).toEqual({ header: toHTTP(http1), content });
+        expect(FN(raw)).toEqual({ header: <RAW>toType(http1), content });
     });
     it('should return empty content if only HTTP header is present', () => {
         const raw = `HTTP/1.1 200 OK\n`;
-        expect(FN(raw)).toEqual({ header: toHTTP(http1), content: '' });
+        expect(FN(raw)).toEqual({ header: <RAW>toType(http1), content: '' });
     });
     it('should return raw content if it does not start with HTTP/ and trimmed', () => {
         const content = 'XXX/1.1 200 OK\n\nfoobar';
@@ -90,8 +91,8 @@ describe('✅ splitHeaderAndContent', () => {
         expect(FN(raw)).toEqual({ header: DEFAULT_HTTP, content: raw });
     });
     it('should return content for HTTP/2 response', () => {
-        const raw = `HTTP/2 200 OK\n\nfoobar`;
-        expect(FN(raw)).toEqual({ header: toHTTP(http2), content: 'foobar' });
+        const raw = `HTTP/2 200 OK\n\nfoo`;
+        expect(FN(raw)).toEqual({ header: <RAW>toType(http2), content: 'foo' });
     });
 });
 describe('✅ getCurlOpts', () => {
@@ -170,34 +171,6 @@ describe('✅ getSuccess()', () => {
         const spy = jest.spyOn(LOG, 'INFO');
         FN('500', { isDev: true });
         expect(spy).toHaveBeenCalledWith('Response: <no-url>: 500');
-        spy.mockRestore();
-    });
-});
-describe('✅ isHTTP()', () => {
-    const FN = isHTTP;
-    it('should return true for a valid HTTP string', () => {
-        const input = '\nHTTP/1.1 200 OK\r\n';
-        expect(FN(input)).toBe(true);
-    });
-
-    it('should return false for an invalid HTTP string', () => {
-        const input = 'INVALID HTTP STRING';
-        expect(FN(input)).toBe(false);
-    });
-});
-describe('✅ toHTTP()', () => {
-    const FN = toHTTP;
-    it('should convert a valid HTTP string to HTTP type', () => {
-        const input = '\nHTTP/1.1 200 OK\r\n';
-        const result = FN(input);
-        expect(result).toBe(input);
-    });
-
-    it('should log an error for an invalid HTTP string', () => {
-        const input = 'INVALID HTTP STRING';
-        const spy = jest.spyOn(LOG, 'FAIL');
-        FN(input);
-        expect(spy).toHaveBeenCalledWith('Invalid HTTP response: ' + input);
         spy.mockRestore();
     });
 });

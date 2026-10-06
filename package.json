@@ -48,6 +48,7 @@
     },
     "devDependencies": {
         "@robert.tools/setup": "^1.3.0",
+        "@robert.tools/testing": "^1.1.2",
         "@types/jest": "^29.5.14",
         "@types/node": "^24.0.0",
         "@typescript-eslint/eslint-plugin": "^8.0.0",
@@ -67,6 +68,6 @@
         "@robert.tools/log": "^1.0.0",
         "@robert.tools/typings": "^1.0.4",
         "@robert.tools/uri": "^1.0.0",
-        "@robert.tools/utils": "^1.1.0"
+        "@robert.tools/utils": "^1.2.0"
     }
 }

@@ -13,18 +13,20 @@ npm install @robert.tools/http
 ```typescript
 
 ```
+
 ### 🗃️ API
 
 * getResponse
 * getHttpItem
 
 ## ⚖️ Notes
-This software is hand-crafted, test-driven and assisted by AI tools. I know each line of my code. ✌️
 
+This software is hand-crafted, test-driven and assisted by AI tools. I know each
+line of my code. ✌️
 
-| Tool  | Comment |
- | ------------- | ------------- |
-| <img src="https://img.shields.io/badge/Jest-TDD-008800?logo=jest" alt="assisted by Jest" />  | Test-driven development with Jest |
-| <img src="https://img.shields.io/badge/robert.tools-ecosystem-008800" alt="assisted by robert.tools" />  | Part of the robert.tools ecosystem |
-| <img src="https://img.shields.io/badge/GitHub_Copilot-assisted-8A2BE2?logo=githubcopilot" alt="assisted by GitHub Copilot" />   | Code completion |
-| <img src="https://img.shields.io/badge/OpenAI-assisted-8A2BE2?logo=openaigym" alt="assisted by OpenAI" />  | chatGPT research |
+| Tool | Comment |
+| --- | --- |
+| ![assisted by Jest](https://img.shields.io/badge/Jest-TDD-008800?logo=jest) | Test-driven development with Jest |
+| ![assisted by robert.tools](https://img.shields.io/badge/robert.tools-ecosystem-008800) | Part of the robert.tools ecosystem |
+| ![assisted by GitHub Copilot](https://img.shields.io/badge/GitHub_Copilot-assisted-8A2BE2?logo=githubcopilot) | Code completion |
+| ![assisted by OpenAI](https://img.shields.io/badge/OpenAI-assisted-8A2BE2?logo=openai) | chatGPT research |

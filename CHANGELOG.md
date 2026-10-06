@@ -1,10 +1,19 @@
 # Changelog
 
+## 2.0.2
+
+### ⚙️ chore
+
+- add markdownlinting
+- externalize `isHTTP` and `toHTTP` to  @robert.tools/utils as `isType` and `toType`
+- fix import comments
+- externalize or abstract dependencies to make structure more modular
+
 ## 2.0.1
 
 ### 🐛 bug fixes
 
-- build should remove the `dist` directory before compiling
+- build-task: build should remove the `dist` directory before compiling
 
 ## 2.0.0
 
@@ -25,6 +34,7 @@ This update forces a major change in the API and internal structure.
 - externalize common utilities to @robert.tools/utils
 - externalize curl functions to @robert.tools/curl
 - 🙈 hide: internalize getHttpItemFromHeader
+- allow duplicated heading for markdown files for
 
 ### ✨ improvements
 
