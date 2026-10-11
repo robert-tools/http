@@ -1,7 +1,7 @@
 /**
  * 🧪 Testing module HTTP
  * @module backend/_shared/HTTP
- * @version 2.0.5
+ * @version 2.0.6
  * @date 2026-10-11
  * @license MIT
  * @author Robert Willemelis <github.com/willi84>

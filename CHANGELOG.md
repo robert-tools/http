@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.6
+
+### 🐛 bug fixes
+
+- getResponse: showLog option added to control logging
+
 ## 2.0.5
 
 ### 🐛 bug fixes
