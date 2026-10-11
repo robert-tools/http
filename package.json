@@ -1,6 +1,6 @@
 {
     "name": "@robert.tools/http",
-    "version": "2.0.4",
+    "version": "2.0.5",
     "description": "A package to provide access to http tools",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -65,7 +65,7 @@
         "@robert.tools/convert": "^1.1.0",
         "@robert.tools/curl": "^1.0.1",
         "@robert.tools/log": "^1.0.0",
-        "@robert.tools/testing": "^1.1.4",
+        "@robert.tools/testing": "^1.1.5",
         "@robert.tools/typings": "^1.0.4",
         "@robert.tools/uri": "^1.0.0",
         "@robert.tools/utils": "^1.2.0"

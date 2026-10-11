@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.5
+
+### 🐛 bug fixes
+
+- fix @robert.tools/testing with unknown dev dependency `expect`
+
 ## 2.0.4
 
 ### ⚙️ chore
