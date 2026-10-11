@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.4
+
+### ⚙️ chore
+
+- update `@robert.tools/testing` version to fix issues with `getDefaultResponse`
+- npm-task:test - deactivate watchman (blocked by system guard of virus scanner)
+
 ## 2.0.3
 
 ### 🐛 bug fixes

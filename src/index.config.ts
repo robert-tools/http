@@ -1,8 +1,8 @@
 /**
  * ⚙️ config for HTTP
  * @module backend/_shared/HTTP
- * @version 2.0.3
- * @date 2026-10-06
+ * @version 2.0.4
+ * @date 2026-10-11
  * @lastModified 2025-10-13
  * @license MIT
  * @author Robert Willemelis <github.com/willi84>
