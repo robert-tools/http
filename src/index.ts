@@ -2,7 +2,7 @@
  * 🎯 A utility class for http handling
  * @module backend/_shared/HTTP
  * @example getResponse('https://www.domain.de');
- * @version 2.0.6
+ * @version 2.0.7
  * @date 2026-10-11
  * @license MIT
  * @author Robert Willemelis <github.com/willi84>
@@ -139,13 +139,12 @@ export const getResponse = (url: URI, options: HTTP_OPTS = OPTS): CurlItem => {
     const start = new Date().getTime();
     const isGithubApi = url.indexOf('api.github.com') !== -1;
     const isMock = getProp(options, 'isMock', false);
-    const showLog = getProp(options, 'showLog', true) || true;
+    const showLog = getProp(options, 'showLog', true); // || true;
     if (isGithubApi && !options.token) {
         const msg = 'Please set a GITHUB_TOKEN in the environment variables.';
         showLog && LOG.FAIL(msg);
         return getDefaultResponse(start, isMock); // fallback
     }
-
     const defaultOptions = {
         timeout: getProp(options, 'timeout', STANDARD_CURL_TIMEOUT),
         silent: true,
@@ -156,9 +155,9 @@ export const getResponse = (url: URI, options: HTTP_OPTS = OPTS): CurlItem => {
     const rawData = curl(url, curlOpts); // run commmand
     // break if no valid HTTP response is received
     if (!isType(rawData, 'HTTP')) {
-        if (rawData.toLowerCase().indexOf('connection refused') !== -1) {
+        const raw = rawData.toLowerCase();
+        if (raw.indexOf('connection refused') !== -1) {
             showLog && LOG.OK(`no host found: ${rawData}`);
-            // TODO: content
         } else {
             showLog && LOG.FAIL(`Invalid HTTP response: ${rawData}`);
             return getDefaultResponse(start, isMock); // fallback

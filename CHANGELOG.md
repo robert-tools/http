@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.7
+
+### 🐛 bug fixes
+
+- getResponse: fix showLog option
+
 ## 2.0.6
 
 ### 🐛 bug fixes
